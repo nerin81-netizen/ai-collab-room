@@ -1448,6 +1448,11 @@
       badge.className = 'badge is-off';
       return;
     }
+    if (needsRoomKey()) {
+      badge.innerHTML = '<i class="live-dot off" aria-hidden="true"></i>입장 키를 넣으면 연결돼요';
+      badge.className = 'badge is-off';
+      return;
+    }
     if (ui.link === 'on') {
       badge.innerHTML = '<i class="live-dot" aria-hidden="true"></i>서버 연결됨 · 실시간 동기화';
       badge.className = 'badge';
