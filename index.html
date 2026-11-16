@@ -1,0 +1,2483 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f3f6fc">
+<title>AI 협업 웹 채팅방</title>
+<style>
+  :root{
+    --ink:#1b2433;
+    --ink-2:#4c586e;
+    --ink-3:#7d8a9d;
+    --line:#e5eaf3;
+    --line-2:#eef2f9;
+    --panel:#f6f8fc;
+    --brand:#4457c8;
+    --brand-2:#6a7cf0;
+    --user:#232f47;
+    --shadow:0 20px 50px -30px rgba(24,34,60,.45);
+    --shadow-lg:0 40px 80px -40px rgba(24,34,60,.5);
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  html,body{margin:0;padding:0}
+  body{
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR","Malgun Gothic","Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(900px 520px at 8% -10%, #e6ecff 0%, rgba(230,236,255,0) 62%),
+      radial-gradient(760px 480px at 102% 0%, #fdeaf3 0%, rgba(253,234,243,0) 58%),
+      linear-gradient(180deg,#f8fafd 0%,#eef2f9 100%);
+  }
+  button,textarea,input{font:inherit;color:inherit}
+  button{cursor:pointer;border:0;background:none}
+  [hidden]{display:none !important}
+
+  .app{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    width:100%;
+    max-width:480px;
+    height:100vh;
+    height:100dvh;
+    overflow:hidden;
+    background:var(--panel);
+  }
+  @media (min-width:560px){
+    body{padding:28px}
+    .app{
+      height:min(880px, calc(100vh - 56px));
+      height:min(880px, calc(100dvh - 56px));
+      border:1px solid rgba(229,234,243,.9);
+      border-radius:26px;
+      box-shadow:var(--shadow-lg);
+    }
+  }
+
+  /* ---------- 헤더 ---------- */
+  .app-header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:16px 18px 14px;
+    background:linear-gradient(180deg,#ffffff 0%,#fbfcff 100%);
+    border-bottom:1px solid var(--line);
+    flex:0 0 auto;
+  }
+  .avatar-stack{display:flex;flex:0 0 auto;padding-left:2px}
+  .avatar-stack .av{
+    width:30px;height:30px;margin-left:-10px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:50%;
+    border:2.5px solid #fff;
+    color:#fff;font-size:11.5px;font-weight:800;letter-spacing:-.4px;
+    box-shadow:0 2px 7px rgba(27,36,51,.16);
+  }
+  .avatar-stack .av:first-child{margin-left:0}
+  .header-text{min-width:0;flex:1 1 auto}
+  .app-header h1{
+    margin:0;
+    font-size:16px;
+    line-height:1.28;
+    font-weight:800;
+    letter-spacing:-.5px;
+    color:var(--ink);
+  }
+  .badge{
+    display:inline-flex;align-items:center;gap:5px;
+    margin-top:6px;padding:3px 9px 3px 7px;
+    border-radius:999px;
+    background:#eef1ff;color:#4454b4;
+    font-size:11px;font-weight:700;letter-spacing:-.2px;
+    border:1px solid #e0e5ff;
+  }
+  .live-dot{
+    width:6px;height:6px;border-radius:50%;background:#4fbe8a;
+    box-shadow:0 0 0 0 rgba(79,190,138,.6);
+    animation:pulse 2.4s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(79,190,138,.55)}
+    70%{box-shadow:0 0 0 6px rgba(79,190,138,0)}
+    100%{box-shadow:0 0 0 0 rgba(79,190,138,0)}
+  }
+
+  /* ---------- 입장 키 안내 ---------- */
+  .key-notice{
+    display:flex;align-items:center;gap:10px;
+    margin:12px 14px 0;padding:11px 12px;
+    border:1px solid #f3ddc0;border-radius:14px;background:#fffaf2;
+    flex:0 0 auto;
+  }
+  .key-notice p{
+    margin:0;flex:1 1 auto;
+    font-size:11.5px;line-height:1.5;font-weight:700;color:#8a5a15;letter-spacing:-.2px;
+  }
+  .key-notice button{
+    flex:0 0 auto;min-height:34px;padding:0 11px;
+    border-radius:10px;background:var(--brand);color:#fff;
+    font-size:11.5px;font-weight:800;letter-spacing:-.2px;
+  }
+  .key-notice button:active{filter:brightness(.95)}
+
+  /* ---------- 탭 ---------- */
+  .tabs{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:4px;
+    margin:12px 14px 8px;padding:4px;
+    background:#eaeff8;border-radius:15px;
+    flex:0 0 auto;
+  }
+  .tab{
+    min-height:36px;padding:8px 4px;border-radius:11px;
+    font-size:13px;font-weight:700;letter-spacing:-.3px;
+    color:#78859a;
+    transition:background .16s ease,color .16s ease,box-shadow .16s ease;
+  }
+  .tab[aria-selected="true"]{
+    background:#fff;color:var(--ink);
+    box-shadow:0 2px 8px rgba(27,36,51,.1);
+  }
+  .tab:active{transform:scale(.985)}
+
+  /* ---------- 패널 ---------- */
+  .panels{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+  .panel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+
+  /* ---------- 타임라인 ---------- */
+  .timeline{
+    flex:1 1 auto;min-height:0;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
+    display:flex;flex-direction:column;gap:11px;
+    padding:12px 14px 6px;
+    overscroll-behavior:contain;
+  }
+  .date-sep{display:flex;justify-content:center;margin:2px 0}
+  .date-sep span{
+    padding:5px 11px;border-radius:999px;
+    background:#e9eef7;color:#6b788c;
+    font-size:11px;font-weight:700;letter-spacing:-.2px;
+  }
+  .msg{display:flex;gap:8px;align-items:flex-start;width:100%}
+  .msg.user{flex-direction:row-reverse}
+  .av-sm{
+    flex:0 0 auto;width:30px;height:30px;margin-top:1px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:11px;
+    background:var(--c,#4457c8);
+    color:#fff;font-size:11.5px;font-weight:800;letter-spacing:-.4px;
+    box-shadow:0 3px 9px -3px rgba(27,36,51,.35);
+  }
+  .av-sm.user-av{background:#39465f;border-radius:50%}
+  .bubble-wrap{
+    display:flex;flex-direction:column;gap:5px;
+    max-width:calc(100% - 42px);min-width:0;
+  }
+  .msg.user .bubble-wrap{align-items:flex-end}
+  .bubble{
+    padding:10px 13px;border-radius:16px;
+    font-size:14px;line-height:1.56;letter-spacing:-.25px;
+    word-break:break-word;overflow-wrap:break-word;
+  }
+  .msg.ai .bubble{
+    background:#fff;color:var(--ink);
+    border:1px solid var(--line);
+    border-top-left-radius:6px;
+    box-shadow:0 2px 10px -7px rgba(27,36,51,.45);
+  }
+  .msg.user .bubble{
+    background:linear-gradient(165deg,#2a3753 0%,#1f2a40 100%);
+    color:#fff;
+    border-top-right-radius:6px;
+    box-shadow:0 6px 18px -12px rgba(27,36,51,.9);
+  }
+  .msg .meta{
+    display:flex;align-items:center;gap:6px;
+    font-size:11px;color:var(--ink-3);letter-spacing:-.2px;
+    padding:0 2px;
+  }
+  .msg.user .meta{justify-content:flex-end}
+  .msg .name{font-weight:800;color:var(--d,#4457c8)}
+  .role-dot{opacity:.5}
+  .msg.is-done .bubble{opacity:.68}
+  .msg.is-done .name{opacity:.75}
+  .mention{
+    padding:1px 2px;margin:0 -1px;border-radius:5px;
+    font-weight:800;letter-spacing:-.2px;
+    background:var(--s,#eef0fd);color:var(--d,#3b4bb5);
+  }
+  .msg.user .mention{
+    background:rgba(255,255,255,.18);
+    color:#fff;
+  }
+  .done-btn{
+    display:inline-flex;align-items:center;gap:4px;
+    min-height:24px;padding:3px 9px;
+    border-radius:999px;border:1px solid var(--line);
+    background:#fff;color:var(--ink-3);
+    font-size:11px;font-weight:700;letter-spacing:-.2px;
+    transition:background .16s,border-color .16s,color .16s;
+  }
+  .done-btn[aria-pressed="true"]{
+    background:#e8f7ef;border-color:#bfe9d3;color:#17845a;
+  }
+  .done-btn:active{transform:scale(.96)}
+
+  /* 작성 중 표시 */
+  .typing .bubble{padding:13px 15px}
+  .dots{display:inline-flex;align-items:center;gap:4px}
+  .dots i{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--c,#8b97ab);opacity:.45;
+    animation:blink 1.15s infinite ease-in-out;
+  }
+  .dots i:nth-child(2){animation-delay:.16s}
+  .dots i:nth-child(3){animation-delay:.32s}
+  @keyframes blink{
+    0%,80%,100%{opacity:.25;transform:translateY(0)}
+    40%{opacity:.95;transform:translateY(-2px)}
+  }
+
+  /* ---------- 빈 화면 ---------- */
+  .empty{
+    margin:auto 0;
+    padding:8px 2px 14px;
+    display:flex;flex-direction:column;align-items:center;text-align:center;
+  }
+  .empty-avatars{display:flex;margin-bottom:12px}
+  .empty-avatars .av{
+    width:36px;height:36px;margin-left:-12px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:50%;border:3px solid var(--panel);
+    color:#fff;font-size:12.5px;font-weight:800;letter-spacing:-.4px;
+    box-shadow:0 4px 12px -6px rgba(27,36,51,.5);
+  }
+  .empty-avatars .av:first-child{margin-left:0}
+  .empty h2{
+    margin:0 0 6px;
+    font-size:15px;font-weight:800;letter-spacing:-.4px;
+  }
+  .empty p{
+    margin:0 0 16px;
+    font-size:12.5px;line-height:1.6;color:var(--ink-3);letter-spacing:-.2px;
+  }
+  .ex-list{display:flex;flex-direction:column;gap:8px;width:100%}
+  .ex-btn{
+    display:flex;align-items:center;gap:10px;
+    width:100%;padding:11px 12px;
+    text-align:left;
+    background:#fff;border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 4px 14px -12px rgba(27,36,51,.6);
+    transition:border-color .16s,transform .16s,box-shadow .16s;
+  }
+  .ex-btn:active{transform:scale(.99);border-color:#cfd8ea}
+  .ex-ico{
+    flex:0 0 auto;width:28px;height:28px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:9px;background:#f1f4fb;font-size:14px;
+  }
+  .ex-body{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 auto}
+  .ex-text{font-size:12.5px;line-height:1.42;font-weight:650;color:var(--ink);letter-spacing:-.25px}
+  .ex-hint{font-size:10.5px;color:var(--ink-3);font-weight:600}
+  .ex-go{flex:0 0 auto;color:#a9b4c6;font-size:13px;font-weight:800}
+
+  /* ---------- 입력 카드 ---------- */
+  .compose{
+    flex:0 0 auto;
+    margin:8px 12px 12px;
+    padding:12px 12px 11px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:0 10px 30px -24px rgba(27,36,51,.85);
+    padding-bottom:max(10px, env(safe-area-inset-bottom));
+  }
+  .compose-head{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:8px;margin:0 2px 8px;
+  }
+  .compose-title{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:11.5px;font-weight:800;color:#5b6880;letter-spacing:-.2px;
+  }
+  .compose-title::before{
+    content:"";width:6px;height:6px;border-radius:2px;
+    background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  }
+  .compose-hint{font-size:10.5px;color:#9aa5b7;font-weight:600}
+  .chips{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
+    padding:1px 1px 7px;
+  }
+  @media (min-width:430px){
+    .chips{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+    .chips::-webkit-scrollbar{display:none}
+  }
+  .chip{
+    flex:0 0 auto;
+    display:inline-flex;align-items:center;justify-content:center;gap:5px;
+    min-height:30px;padding:5px 8px;
+    border-radius:999px;border:1px solid var(--line);
+    background:#fff;color:#5b6880;
+    font-size:12px;font-weight:650;letter-spacing:-.2px;
+    white-space:nowrap;
+    transition:background .16s,border-color .16s,color .16s;
+  }
+  .chip:active{transform:scale(.97)}
+  .chip.is-on{
+    background:var(--s,#eef0fd);
+    border-color:var(--c,#4457c8);
+    color:var(--d,#3b4bb5);
+    font-weight:800;
+  }
+  .chip-dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--c,#9aa5b7);
+  }
+  .chip-dot.all{background:linear-gradient(135deg,#4457c8,#a15cf0)}
+  .input-wrap{
+    border:1px solid var(--line);border-radius:14px;
+    background:#fafbfe;padding:7px 10px;
+    transition:border-color .16s,box-shadow .16s;
+  }
+  .input-wrap:focus-within{
+    border-color:#bcc7e6;
+    box-shadow:0 0 0 3px rgba(68,87,200,.08);
+    background:#fff;
+  }
+  #input{
+    display:block;width:100%;
+    min-height:24px;max-height:132px;
+    padding:0;border:0;outline:0;resize:none;
+    background:transparent;
+    font-size:14px;line-height:1.5;letter-spacing:-.25px;
+    color:var(--ink);
+  }
+  #input::placeholder{color:#a3aebf}
+  .send-btn{
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    width:100%;min-height:44px;margin-top:8px;
+    border-radius:14px;
+    background:linear-gradient(135deg,#4457c8 0%,#6a7cf0 100%);
+    color:#fff;font-size:14px;font-weight:800;letter-spacing:-.3px;
+    box-shadow:0 10px 22px -14px rgba(68,87,200,.95);
+    transition:transform .14s,box-shadow .16s,opacity .16s;
+  }
+  .send-btn:active{transform:scale(.99);box-shadow:0 6px 16px -14px rgba(68,87,200,.95)}
+  .send-btn:disabled{opacity:.55;box-shadow:none}
+
+  /* ---------- 스크롤 영역(멤버·설정) ---------- */
+  .scroll-area{
+    flex:1 1 auto;min-height:0;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding:14px 14px max(20px, env(safe-area-inset-bottom));
+    overscroll-behavior:contain;
+  }
+  .panel-lead{
+    margin:0 2px 12px;
+    font-size:12px;line-height:1.5;color:var(--ink-3);letter-spacing:-.2px;
+  }
+
+  /* ---------- 멤버 카드 ---------- */
+  .member{
+    position:relative;
+    background:#fff;border:1px solid var(--line);
+    border-radius:18px;padding:14px 14px 13px;
+    margin-bottom:11px;
+    overflow:hidden;
+    box-shadow:0 6px 20px -20px rgba(27,36,51,.8);
+  }
+  .member::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:var(--c,#4457c8);opacity:.85;
+  }
+  .member-top{display:flex;align-items:center;gap:10px}
+  .av-lg{
+    flex:0 0 auto;width:42px;height:42px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:14px;background:var(--c,#4457c8);
+    color:#fff;font-size:15px;font-weight:800;letter-spacing:-.5px;
+    box-shadow:0 6px 14px -8px var(--c,#4457c8);
+  }
+  .member-id{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}
+  .member-id h3{margin:0;font-size:14.5px;font-weight:800;letter-spacing:-.4px}
+  .role-tag{
+    padding:3px 8px;border-radius:999px;
+    background:var(--s,#eef0fd);color:var(--d,#3b4bb5);
+    font-size:10.5px;font-weight:800;letter-spacing:-.2px;
+  }
+  .member p{
+    margin:9px 0 0;
+    font-size:12.5px;line-height:1.55;color:var(--ink-2);letter-spacing:-.25px;
+  }
+  .skills{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+  .skill{
+    padding:3px 7px;border-radius:7px;
+    background:#f3f6fb;color:#63708a;
+    font-size:10.5px;font-weight:650;letter-spacing:-.2px;
+  }
+  .ask-btn{
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    width:100%;min-height:40px;margin-top:11px;
+    border-radius:12px;
+    border:1px solid var(--c,#4457c8);
+    background:var(--s,#eef0fd);
+    color:var(--d,#3b4bb5);
+    font-size:12.5px;font-weight:800;letter-spacing:-.25px;
+    transition:transform .14s,filter .16s;
+  }
+  .ask-btn:active{transform:scale(.99);filter:brightness(.98)}
+
+  /* ---------- 설정 ---------- */
+  .set-card{
+    background:#fff;border:1px solid var(--line);
+    border-radius:18px;padding:14px;
+    margin-bottom:11px;
+    box-shadow:0 6px 20px -20px rgba(27,36,51,.8);
+  }
+  .set-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .set-title{font-size:13.5px;font-weight:800;letter-spacing:-.35px}
+  .pill{
+    padding:4px 9px;border-radius:999px;
+    font-size:10.5px;font-weight:800;letter-spacing:-.2px;
+    background:#eef2f9;color:#6b788c;
+  }
+  .pill.ok{background:#e8f7ef;color:#17845a}
+  .pill.warn{background:#fdeceb;color:#c0392b}
+  .set-desc{
+    margin:8px 0 0;
+    font-size:12px;line-height:1.55;color:var(--ink-3);letter-spacing:-.2px;
+  }
+  .stat-list{margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:0}
+  .stat-list > div{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:9px 0;border-top:1px solid var(--line-2);
+  }
+  .stat-list > div:first-child{border-top:0;padding-top:2px}
+  .stat-list dt{font-size:12px;color:var(--ink-3);font-weight:650;letter-spacing:-.2px}
+  .stat-list dd{margin:0;font-size:12.5px;font-weight:800;color:var(--ink);letter-spacing:-.2px}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    min-height:44px;padding:0 16px;
+    border-radius:13px;border:1px solid var(--line);
+    background:#fff;color:var(--ink);
+    font-size:13px;font-weight:800;letter-spacing:-.25px;
+    margin-top:12px;
+    transition:transform .14s,background .16s;
+  }
+  .btn.wide{width:100%}
+  .btn:active{transform:scale(.99)}
+  .btn.danger-btn{color:#c0392b;border-color:#f5d2ce;background:#fff8f7}
+  .btn.danger-btn.solid{background:#d6493b;border-color:#d6493b;color:#fff}
+  .confirm-box{
+    margin-top:11px;padding:12px;
+    border-radius:13px;background:#fff8f7;
+    border:1px solid #f7d9d5;
+  }
+  .confirm-box p{
+    margin:0;font-size:12px;line-height:1.5;color:#a03a2f;letter-spacing:-.2px;
+  }
+  .confirm-btns{display:flex;gap:8px;margin-top:10px}
+  .confirm-btns .btn{margin-top:0;flex:1 1 0}
+  .set-foot{
+    margin:4px 2px 0;
+    font-size:11px;line-height:1.55;color:#9aa5b7;text-align:center;letter-spacing:-.2px;
+  }
+
+  /* ---------- 토스트 ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:26px;
+    transform:translate(-50%,14px);
+    max-width:min(88vw,360px);
+    padding:11px 16px;border-radius:13px;
+    background:rgba(27,36,51,.94);color:#fff;
+    font-size:12.5px;font-weight:700;letter-spacing:-.2px;
+    text-align:center;
+    opacity:0;pointer-events:none;
+    transition:opacity .22s ease,transform .22s ease;
+    z-index:60;
+    box-shadow:0 16px 32px -18px rgba(0,0,0,.7);
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  /* ---------- 서버 연결(설정) ---------- */
+  .badge.is-off{background:#f2f4f9;color:#7d8a9d;border-color:#e5eaf3}
+  .live-dot.off{background:#b3bdcd;animation:none;box-shadow:none}
+  .mono{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:10.5px !important;letter-spacing:-.1px !important;
+    word-break:break-all;text-align:right;max-width:64%;
+  }
+  .set-note{margin:10px 0 0;font-size:11px;color:var(--ink-3);letter-spacing:-.2px}
+  .field-row{display:flex;flex-direction:column;gap:5px;margin-top:11px}
+  .field-row label{font-size:11.5px;font-weight:800;color:#5b6880;letter-spacing:-.2px}
+  .field-row input,.field-row select{
+    min-height:40px;padding:0 11px;border-radius:11px;
+    border:1px solid var(--line);background:#fafbfe;color:var(--ink);
+    font-size:12.5px;font-weight:650;letter-spacing:-.2px;
+  }
+  .field-row input:focus,.field-row select:focus{
+    outline:0;border-color:#bcc7e6;background:#fff;
+    box-shadow:0 0 0 3px rgba(68,87,200,.08);
+  }
+  .field-row input:disabled,.field-row select:disabled{opacity:.55}
+  .btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn-row .btn{width:100%;margin-top:10px;padding:0 10px;font-size:12.5px}
+  .switch-row{
+    display:flex;align-items:center;gap:8px;margin-top:12px;
+    font-size:12px;color:var(--ink-2);font-weight:650;letter-spacing:-.2px;
+  }
+  .switch-row input{width:18px;height:18px;accent-color:#4457c8}
+  .guide{
+    width:100%;margin-top:10px;padding:10px 11px;
+    border-radius:11px;border:1px solid var(--line);background:#f8fafd;color:var(--ink-2);
+    font-size:10.5px;line-height:1.65;letter-spacing:-.1px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    resize:vertical;
+  }
+  .msg-state{font-size:10.5px;font-weight:700;color:#c0392b;letter-spacing:-.2px}
+  .msg-state.sending{color:#9aa5b7}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="app-header">
+    <div class="avatar-stack" id="headerAvatars" aria-hidden="true"></div>
+    <div class="header-text">
+      <h1>AI들이 일을 이어 가고 있어요</h1>
+      <span class="badge is-off" id="connBadge"><i class="live-dot off" aria-hidden="true"></i>서버 연결 확인 중</span>
+    </div>
+  </header>
+
+  <div class="key-notice" id="keyNotice" hidden role="note">
+    <p id="keyNoticeText">이 방은 아직 입장 키가 없어요. 받으신 접속 링크로 다시 열거나, 설정에서 방 이름(입장 키)을 넣어 주세요.</p>
+    <button type="button" id="keyNoticeBtn">설정에서 입력</button>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="화면 전환">
+    <button class="tab" type="button" role="tab" id="tab-chat" data-tab="chat" aria-selected="true" aria-controls="panel-chat">대화·결정</button>
+    <button class="tab" type="button" role="tab" id="tab-members" data-tab="members" aria-selected="false" aria-controls="panel-members" tabindex="-1">멤버·AI</button>
+    <button class="tab" type="button" role="tab" id="tab-settings" data-tab="settings" aria-selected="false" aria-controls="panel-settings" tabindex="-1">설정</button>
+  </nav>
+
+  <main class="panels">
+    <section class="panel" id="panel-chat" role="tabpanel" aria-labelledby="tab-chat">
+      <div class="timeline" id="timeline" aria-live="polite"></div>
+      <form class="compose" id="compose" autocomplete="off">
+        <div class="compose-head">
+          <span class="compose-title">AI에게 시킬 일</span>
+          <span class="compose-hint">Enter로 보내기</span>
+        </div>
+        <div class="chips" id="chips" role="group" aria-label="대상 선택"></div>
+        <div class="input-wrap">
+          <textarea id="input" rows="1" maxlength="600" placeholder="여러 AI에게 나눠 맡길 일을 적어 보세요" aria-label="AI에게 시킬 일 입력"></textarea>
+        </div>
+        <button class="send-btn" type="submit" id="sendBtn">
+          <span>지시 남기기</span>
+          <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"></path><path d="m12 5 7 7-7 7"></path></svg>
+        </button>
+      </form>
+    </section>
+
+    <section class="panel" id="panel-members" role="tabpanel" aria-labelledby="tab-members" hidden>
+      <div class="scroll-area">
+        <p class="panel-lead">AI 5명이 각자 맡은 일을 나눠서 처리해요. 바로 말을 걸어 보세요.</p>
+        <div id="memberList"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+      <div class="scroll-area">
+        <div class="set-card">
+          <div class="set-head">
+            <span class="set-title">실시간 서버 연결</span>
+            <span class="pill" id="linkState">확인 중</span>
+          </div>
+          <p class="set-desc">AI 봇들이 같은 방에 접속해 메시지를 읽고 답장해요. 새 메시지는 3초마다 자동으로 받아 옵니다.</p>
+          <dl class="stat-list">
+            <div><dt>연결 방식</dt><dd id="linkMode">릴레이(ntfy)</dd></div>
+            <div><dt>마지막 동기화</dt><dd id="lastSync">아직 없음</dd></div>
+            <div><dt>방 주소</dt><dd id="linkRoom" class="mono">-</dd></div>
+            <div><dt>입장 키</dt><dd id="linkKey" class="mono">-</dd></div>
+          </dl>
+          <p class="set-note" id="linkStat">보낸 0 · 받은 0</p>
+
+          <div class="field-row">
+            <label for="modeSelect">연결 방식</label>
+            <select id="modeSelect">
+              <option value="relay">릴레이(ntfy) — 가입 없이 바로</option>
+              <option value="apps">Apps Script 웹 앱 — 구글 저장</option>
+              <option value="offline">오프라인 — 서버 없이</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <label for="apiInput">서버 주소</label>
+            <input id="apiInput" type="url" inputmode="url" placeholder="https://ntfy.sh" spellcheck="false">
+          </div>
+          <div class="field-row">
+            <label for="keyInput">방 이름 / 입장 키</label>
+            <input id="keyInput" type="text" placeholder="방 이름(토픽)" spellcheck="false" autocomplete="off">
+          </div>
+          <div class="btn-row">
+            <button class="btn" type="button" id="applyServer">저장 후 연결</button>
+            <button class="btn" type="button" id="retrySync">지금 다시 확인</button>
+          </div>
+          <button class="btn wide" type="button" id="newRoom">새 방 만들기 (새 키 발급)</button>
+          <div class="btn-row">
+            <button class="btn" type="button" id="copyRoom">방 주소·키 복사</button>
+            <button class="btn" type="button" id="copyBot">봇 접속 안내 복사</button>
+          </div>
+
+          <label class="switch-row">
+            <input type="checkbox" id="simToggle">
+            <span>로컬 시뮬레이터 (봇 없이 답장 미리보기)</span>
+          </label>
+
+          <textarea class="guide" id="botGuide" rows="9" readonly aria-label="봇 접속용 안내 문구"></textarea>
+        </div>
+
+        <div class="set-card">
+          <div class="set-head">
+            <span class="set-title">로컬 자동 저장</span>
+            <span class="pill ok" id="saveState">자동 저장 켜짐</span>
+          </div>
+          <p class="set-desc">대화와 완료 표시는 이 브라우저(localStorage)에만 저장돼요. 어디로도 전송하지 않아요.</p>
+          <dl class="stat-list">
+            <div><dt>마지막 저장</dt><dd id="lastSaved">아직 없음</dd></div>
+            <div><dt>대화</dt><dd id="msgCount">0개</dd></div>
+            <div><dt>완료 표시</dt><dd id="doneCount">0개</dd></div>
+            <div><dt>저장 용량</dt><dd id="storageSize">0B</dd></div>
+          </dl>
+        </div>
+
+        <div class="set-card">
+          <div class="set-head">
+            <span class="set-title">대화 내보내기</span>
+          </div>
+          <p class="set-desc">지금까지의 대화·완료 상태·AI 목록을 JSON 파일 하나로 저장해요. 백업하거나 다른 곳으로 옮길 때 쓰세요.</p>
+          <button class="btn wide" type="button" id="exportBtn">JSON 파일로 내보내기</button>
+        </div>
+
+        <div class="set-card">
+          <div class="set-head">
+            <span class="set-title">대화 초기화</span>
+          </div>
+          <p class="set-desc">이 브라우저에 저장된 대화와 완료 표시를 모두 지워요. 되돌릴 수 없으니 필요하면 먼저 내보내기로 백업하세요.</p>
+          <button class="btn wide danger-btn" type="button" id="resetBtn">대화 초기화</button>
+          <div class="confirm-box" id="resetConfirm" hidden>
+            <p>정말 초기화할까요? 저장된 대화가 모두 사라져요.</p>
+            <div class="confirm-btns">
+              <button class="btn" type="button" id="resetCancel">취소</button>
+              <button class="btn danger-btn solid" type="button" id="resetYes">초기화</button>
+            </div>
+          </div>
+        </div>
+
+        <p class="set-foot">외부 라이브러리 없이 index.html 한 파일로 동작해요.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+     AI 정의
+     ========================================================= */
+  var AIS = [
+    {
+      id: 'pickle', name: '피클', initial: '피', role: '실행·전화·예약',
+      color: '#1f8f63', soft: '#e7f7f0', deep: '#136c4a',
+      desc: '전화 걸기, 예약 잡기, 주문·결제처럼 손이 직접 필요한 일을 맡아요.',
+      skills: ['전화 문의', '예약 잡기', '주문·결제', '서류 제출']
+    },
+    {
+      id: 'keyring', name: '키링', initial: '키', role: '일정·정리',
+      color: '#7a5cf0', soft: '#efecfe', deep: '#5b41c9',
+      desc: '일정 등록과 할 일 정리, 마감 알림까지 한 묶음으로 챙겨요.',
+      skills: ['캘린더 등록', '할 일 정리', '마감 알림', '회의 정리']
+    },
+    {
+      id: 'cue', name: 'Cue', initial: 'C', role: '자료조사·분석',
+      color: '#2d6fe0', soft: '#e8f0fe', deep: '#1d55b5',
+      desc: '출처를 확인하고 숫자로 비교하는 조사·분석을 맡아요.',
+      skills: ['자료 조사', '원인 분석', '통계 비교', '보고서 정리']
+    },
+    {
+      id: 'muse', name: '뮤즈', initial: '뮤', role: '쇼핑·장기계획',
+      color: '#d9477f', soft: '#fdebf2', deep: '#ab2f61',
+      desc: '예산에 맞춘 구매 판단과 몇 달 단위의 계획을 그려요.',
+      skills: ['구매 판단', '예산 관리', '구독 정리', '장기 로드맵']
+    },
+    {
+      id: 'vooy', name: '부이', initial: '부', role: '비교·취향추천',
+      color: '#d98324', soft: '#fdf2e3', deep: '#a2600f',
+      desc: '후보를 좁혀 장단점으로 비교하고, 취향에 맞는 하나를 골라요.',
+      skills: ['후보 비교', '취향 추천', '장단점 정리', '대안 제시']
+    }
+  ];
+
+  var AI_BY_ID = {};
+  var AI_ORDER = [];
+  AIS.forEach(function (ai) {
+    AI_BY_ID[ai.id] = ai;
+    AI_ORDER.push(ai.id);
+  });
+
+  /* 주제 키워드 — '모두에게' 보낼 때 누가 답할지 고르는 기준 */
+  var KEYWORDS = {
+    pickle: ['예약', '전화', '문의', '연락', '주문', '결제', '취소', '배송', '환불', '신청', '제출', '발송', '예매', '잡아줘', '걸어줘'],
+    keyring: ['일정', '캘린더', '스케줄', '날짜', '시간', '약속', '마감', '정리', '목록', '할일', '할 일', '체크', '리마인더', '알림', '회의', '모임'],
+    cue: ['조사', '분석', '찾아', '검색', '자료', '통계', '원인', '리포트', '보고서', '출처', '뉴스', '논문', '알아봐', '확인해', '추이', '시장'],
+    muse: ['구매', '쇼핑', '가격', '예산', '여행', '장기', '로드맵', '준비', '투자', '구독', '할인', '쿠폰', '비용', '계획', '살까', '사줘'],
+    vooy: ['비교', '추천', '어떤', '고르', '선택', '후보', '취향', '장단점', '나은', '차이', 'vs', '골라', '옵션']
+  };
+
+  /* 역할별 답장 문장 — 마지막 항목이 기본값 */
+  var REPLY_RULES = {
+    pickle: [
+      { keys: ['예약', '예매', '잡아', '문의', '자리'], text: '예약 건은 제가 맡을게요. 후보 시간 두 개로 좁혀서 문의 넣고, 확정되는 대로 바로 알려드리겠습니다.' },
+      { keys: ['전화', '연락', '걸어'], text: '전화로 확인해야 하는 건은 제가 걸어볼게요. 통화 끝나면 핵심만 세 줄로 정리해서 올리겠습니다.' },
+      { keys: ['주문', '결제', '구매', '취소', '배송', '환불'], text: '주문·결제는 금액과 조건을 먼저 확인하고 진행할게요. 결제 직전에 한 번 확인받고 움직이겠습니다.' },
+      { keys: ['신청', '제출', '발송', '보내'], text: '접수·제출은 제가 맡아서 서류 빠진 것부터 점검할게요. 마감 전에 처리 결과까지 붙여 드리겠습니다.' },
+      { keys: [], text: '확인했어요. 이 건은 제가 실행 쪽으로 맡을게요. 필요한 연락과 예약은 제가 처리하고 결과만 짧게 보고드리겠습니다.' }
+    ],
+    keyring: [
+      { keys: ['일정', '캘린더', '스케줄', '약속', '날짜', '시간'], text: '일정에 바로 넣어 둘게요. 확정된 날짜부터 캘린더에 올리고, 아직 안 정해진 건 미정으로 잡아 두겠습니다.' },
+      { keys: ['마감', '알림', '리마인더', '디데이'], text: '마감에서 역산해서 D-3, D-1에 알림 걸어 둘게요. 놓치면 안 되는 건 목록 맨 위로 올려 두겠습니다.' },
+      { keys: ['정리', '목록', '할일', '할 일', '체크'], text: '할 일을 세 묶음으로 쪼개 정리했어요. 오늘 처리할 것, 이번 주 안에 할 것, 나중에 볼 것으로 나눠서 보여드릴게요.' },
+      { keys: ['회의', '모임', '참석'], text: '참석자·장소·시간 순서로 정리해서 한 장으로 만들게요. 겹치는 일정이 있으면 바로 알려드리겠습니다.' },
+      { keys: [], text: '받은 내용을 목록으로 정리해 둘게요. 겹치거나 빠진 부분이 있으면 제가 먼저 짚어서 알려드리겠습니다.' }
+    ],
+    cue: [
+      { keys: ['조사', '찾아', '검색', '자료', '정보', '알아봐'], text: '자료 조사해서 출처가 확실한 것 위주로 3~4개만 추려 올게요. 숫자는 최신 기준으로 맞춰 비교표로 정리하겠습니다.' },
+      { keys: ['분석', '원인', '왜', '이유', '추이'], text: '원인은 두 갈래로 보입니다. 근거 자료를 붙여서 어느 쪽이 더 큰지 표로 정리해 드리겠습니다.' },
+      { keys: ['비교', '차이', '장단점', 'vs'], text: '비교 축을 먼저 맞춰서 표로 만들게요. 조건이 다르면 같은 기준으로 환산해서 보여드리겠습니다.' },
+      { keys: ['보고서', '리포트', '정리해'], text: '보고서 형태로 정리할게요. 결론 한 줄, 근거 세 개 순서로 읽기 쉽게 구성하겠습니다.' },
+      { keys: [], text: '관련 자료부터 확인해서 사실관계를 정리할게요. 확인된 것과 추정을 구분해서 전달드리겠습니다.' }
+    ],
+    muse: [
+      { keys: ['구매', '쇼핑', '가격', '할인', '쿠폰', '사줘', '살까'], text: '예산 기준으로 후보를 추려볼게요. 지금 사는 게 나은지, 할인을 기다리는 게 나은지도 같이 계산해 드리겠습니다.' },
+      { keys: ['예산', '얼마', '비용', '지출'], text: '예산을 항목별로 나눠 잡아볼게요. 고정비와 한 번만 쓰는 비용을 분리해서 보여드리겠습니다.' },
+      { keys: ['계획', '여행', '장기', '로드맵', '준비'], text: '3개월 단위로 나눠 계획을 그려볼게요. 이번 달에 바로 할 일부터 확실하게 정리하죠.' },
+      { keys: ['구독', '정기', '멤버십'], text: '지금 쓰는 구독을 정리해서 유지할 것과 끊을 것을 나눠볼게요. 겹치는 서비스는 하나로 합치는 쪽으로 제안드릴게요.' },
+      { keys: [], text: '큰 그림부터 잡아볼게요. 목표와 예산을 기준으로 이번 달에 할 일과 나중에 할 일을 나눠 정리해 드리겠습니다.' }
+    ],
+    vooy: [
+      { keys: ['비교', '차이', '장단점', 'vs'], text: '조건 맞춰 표로 비교해 드릴게요. 가격·유지비·후기 세 축으로 보면 선택지가 꽤 좁혀집니다.' },
+      { keys: ['추천', '어떤', '고르', '선택', '골라'], text: '취향 기준으로 두세 개만 남겨볼게요. 장단점을 한 줄씩 붙여서 고르기 쉽게 정리하겠습니다.' },
+      { keys: ['후보', '리스트', '몇 개', '옵션'], text: '후보는 세 개로 압축할게요. 탈락한 것들은 왜 뺐는지 한 줄씩 남겨 두겠습니다.' },
+      { keys: ['취향', '스타일', '느낌', '디자인'], text: '쓰는 상황까지 같이 보면 답이 달라져요. 평일용과 주말용을 나눠서 추천드릴게요.' },
+      { keys: [], text: '후보를 좁혀서 장단점으로 비교해 드릴게요. 제 기준에서는 무난한 쪽부터 보시는 게 안전합니다.' }
+    ]
+  };
+
+  /* 주제가 한 명에게만 걸렸을 때 자연스럽게 이어 붙일 짝 */
+  var COMPANION = {
+    pickle: ['keyring', 'cue'],
+    keyring: ['pickle', 'cue'],
+    cue: ['vooy', 'muse'],
+    muse: ['vooy', 'cue'],
+    vooy: ['muse', 'cue']
+  };
+
+  /* 앞 AI의 말을 이어받은 AI가 쓰는 첫 문장 */
+  var FOLLOW_UP = {
+    pickle: [
+      '이어받았어요. 실제로 움직여야 하는 부분은 제가 맡아서 처리하고, 결과만 짧게 보고드릴게요.',
+      '네, 제가 실행 쪽으로 이어받을게요. 연락이 필요한 건 바로 진행하고 상황 공유드리겠습니다.'
+    ],
+    keyring: [
+      '이어받았어요. 확정되는 일정부터 캘린더에 넣고, 하루 전에 알림 드릴게요.',
+      '정리해서 일정표로 묶어 둘게요. 겹치는 날짜가 있으면 먼저 알려드리겠습니다.'
+    ],
+    cue: [
+      '이어받았어요. 판단에 필요한 근거 자료를 찾아서 함께 붙여 둘게요.',
+      '제가 자료 쪽을 받을게요. 출처와 숫자를 확인해서 비교표로 정리하겠습니다.'
+    ],
+    muse: [
+      '이어받았어요. 예산과 일정 계획에 맞는지 계산해서 정리해 드릴게요.',
+      '제가 예산 쪽을 볼게요. 지금 쓰는 것과 앞으로 쓸 것을 나눠서 제안드리겠습니다.'
+    ],
+    vooy: [
+      '이어받았어요. 후보가 갈리면 장단점으로 비교해서 하나로 좁혀 드릴게요.',
+      '제가 비교해서 추려볼게요. 취향 기준으로 두세 개만 남겨 보겠습니다.'
+    ]
+  };
+
+  /* 다음 AI에게 일을 넘기는 한 줄 */
+  var HANDOFF = {
+    pickle: '실제 진행은 @피클이 맡아 줄 거예요.',
+    keyring: '확정된 일정은 @키링이 캘린더에 넣어 줄게요.',
+    cue: '근거 자료는 @Cue가 붙여 줄 거예요.',
+    muse: '예산 계산은 @뮤즈가 이어서 볼게요.',
+    vooy: '최종 후보 비교는 @부이가 맡아 줄게요.'
+  };
+
+  var EXAMPLES = [
+    { icon: '📅', label: '이번 주 토요일 저녁, 미사 쪽 가족 외식 예약 좀 잡아줘', hint: '피클이 예약을 맡아요' },
+    { icon: '🗂️', label: '다음 주 마감 세 개 캘린더에 정리하고 알림 걸어줘', hint: '키링이 일정을 정리해요' },
+    { icon: '🛒', label: '무선 청소기 30만원대 후보 비교해서 하나 추천해줘', hint: '부이가 비교해요' }
+  ];
+
+  /* =========================================================
+     순수 로직 (DOM과 무관)
+     ========================================================= */
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  function formatTime(date) {
+    var h = date.getHours();
+    var ap = h < 12 ? '오전' : '오후';
+    var hh = h % 12;
+    if (hh === 0) { hh = 12; }
+    return ap + ' ' + hh + ':' + pad2(date.getMinutes());
+  }
+
+  var WEEK_LABEL = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+
+  function formatDateLabel(date) {
+    return date.getFullYear() + '년 ' + (date.getMonth() + 1) + '월 ' + date.getDate() + '일 ' + WEEK_LABEL[date.getDay()];
+  }
+
+  function dayKey(date) {
+    return date.getFullYear() + '-' + pad2(date.getMonth() + 1) + '-' + pad2(date.getDate());
+  }
+
+  function reEsc(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  var MENTION_RE = new RegExp('@\\s?(' + AIS.map(function (a) { return reEsc(a.name); }).join('|') + ')', 'gi');
+
+  function aiByName(name) {
+    var lower = String(name).toLowerCase();
+    for (var i = 0; i < AIS.length; i += 1) {
+      if (AIS[i].name.toLowerCase() === lower) { return AIS[i]; }
+    }
+    return null;
+  }
+
+  function findMentions(text) {
+    var out = [];
+    var m;
+    MENTION_RE.lastIndex = 0;
+    while ((m = MENTION_RE.exec(text)) !== null) {
+      var ai = aiByName(m[1]);
+      if (ai && out.indexOf(ai.id) < 0) { out.push(ai.id); }
+      if (m.index === MENTION_RE.lastIndex) { MENTION_RE.lastIndex += 1; }
+    }
+    return out;
+  }
+
+  function scoreTopics(text) {
+    var lower = String(text).toLowerCase();
+    var scores = {};
+    AIS.forEach(function (ai) {
+      var score = 0;
+      (KEYWORDS[ai.id] || []).forEach(function (kw) {
+        if (lower.indexOf(kw.toLowerCase()) >= 0) { score += 1; }
+      });
+      scores[ai.id] = score;
+    });
+    return scores;
+  }
+
+  function pickRecipients(target, text) {
+    var mentions = findMentions(text);
+    var out = [];
+
+    function add(id) {
+      if (id && AI_BY_ID[id] && out.indexOf(id) < 0 && out.length < 3) { out.push(id); }
+    }
+
+    if (target !== 'all') {
+      add(target);
+      mentions.forEach(function (id) { if (id !== target) { add(id); } });
+      return out;
+    }
+
+    if (mentions.length) {
+      mentions.forEach(add);
+      return out;
+    }
+
+    var scores = scoreTopics(text);
+    var ranked = AI_ORDER.slice().sort(function (a, b) {
+      if (scores[b] !== scores[a]) { return scores[b] - scores[a]; }
+      return AI_ORDER.indexOf(a) - AI_ORDER.indexOf(b);
+    });
+    var matched = ranked.filter(function (id) { return scores[id] > 0; });
+
+    if (!matched.length) {
+      add('pickle');
+      add('keyring');
+      return out;
+    }
+
+    matched.slice(0, 3).forEach(add);
+    if (out.length < 2) {
+      var companions = COMPANION[out[0]] || [];
+      for (var c = 0; c < companions.length && out.length < 2; c += 1) { add(companions[c]); }
+      var fallback = ['keyring', 'cue', 'muse', 'vooy', 'pickle'];
+      for (var i = 0; i < fallback.length && out.length < 2; i += 1) { add(fallback[i]); }
+    }
+    return out;
+  }
+
+  function makeReply(aiId, text, seed, nextAiId, isFollowUp) {
+    if (isFollowUp && FOLLOW_UP[aiId]) {
+      var lines = FOLLOW_UP[aiId];
+      var line = lines[seed % lines.length];
+      if (nextAiId && line.indexOf('@') < 0 && HANDOFF[nextAiId]) {
+        line += ' ' + HANDOFF[nextAiId];
+      }
+      return line;
+    }
+    var rules = REPLY_RULES[aiId] || [];
+    var lower = String(text).toLowerCase();
+    var hits = rules.filter(function (rule) {
+      return rule.keys.length > 0 && rule.keys.some(function (k) {
+        return lower.indexOf(String(k).toLowerCase()) >= 0;
+      });
+    });
+    var rule = hits.length ? hits[seed % hits.length] : rules[rules.length - 1];
+    var body = rule ? rule.text : '확인했어요. 제가 맡을 부분부터 정리할게요.';
+    if (nextAiId && body.indexOf('@') < 0 && HANDOFF[nextAiId]) {
+      body += ' ' + HANDOFF[nextAiId];
+    }
+    return body;
+  }
+
+  /* =========================================================
+     설정 · 방 정보 (서버 연동)
+     ========================================================= */
+  var STORAGE_KEY = 'ai-collab-room-v2';
+  var CONFIG_KEY = 'ai-collab-config-v2';
+  var ROOM_CHARS = 'abcdefghijkmnpqrstuvwxyz23456789';
+  // 공개 페이지라서 방 입장 키는 소스에 넣지 않습니다.
+  // ?topic=입장키 (또는 ?mode=apps&api=서버주소&key=입장키) 로 열면 바로 연결되고,
+  // 그 값이 이 브라우저(localStorage)에 저장되어 다음부터는 파라미터 없이도 유지됩니다.
+  var DEFAULT_TOPIC = '';
+
+  function randomRoom() {
+    var out = 'airoom';
+    for (var i = 0; i < 16; i += 1) {
+      out += ROOM_CHARS.charAt(Math.floor(Math.random() * ROOM_CHARS.length));
+    }
+    return out;
+  }
+
+  var config = {
+    mode: 'relay',                       // relay(ntfy) | apps(Apps Script) | offline
+    relayBase: 'https://ntfy.sh',
+    topic: DEFAULT_TOPIC,
+    appsUrl: '',
+    appsKey: '',
+    simulate: false,
+    pollRelay: 3000,
+    pollApps: 5000
+  };
+
+  var state = { messages: [], target: 'all' };
+
+  var ui = {
+    pending: null,
+    queue: [],
+    busy: false,
+    gen: 0,
+    lastSaved: 0,
+    saveError: false,
+    storageOK: true,
+    toastTimer: null,
+    idSeq: 0,
+    guideSig: '',
+    link: 'off',        // on | off
+    lastSync: 0,
+    lastError: '',
+    sent: 0,
+    received: 0,
+    pollTimer: null,
+    polling: false,
+    outbox: [],
+    relayCursor: null,
+    clearAt: 0
+  };
+
+  function nextId() {
+    ui.idSeq += 1;
+    return 'm' + Date.now().toString(36) + ui.idSeq.toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  function findMessage(id) {
+    for (var i = 0; i < state.messages.length; i += 1) {
+      if (state.messages[i].id === id) { return state.messages[i]; }
+    }
+    return null;
+  }
+
+  function sortMessages() {
+    state.messages.sort(function (a, b) {
+      var ta = new Date(a.ts).getTime() || 0;
+      var tb = new Date(b.ts).getTime() || 0;
+      if (ta !== tb) { return ta - tb; }
+      return String(a.id) < String(b.id) ? -1 : 1;
+    });
+  }
+
+  function isoOr(value) {
+    var d = value ? new Date(value) : new Date();
+    if (isNaN(d.getTime())) { d = new Date(); }
+    return d.toISOString();
+  }
+
+  function loadConfig() {
+    var raw = null;
+    try { raw = window.localStorage.getItem(CONFIG_KEY); } catch (e) { raw = null; }
+    if (raw) {
+      try {
+        var data = JSON.parse(raw);
+        if (data && typeof data === 'object') {
+          if (data.mode === 'relay' || data.mode === 'apps' || data.mode === 'offline') { config.mode = data.mode; }
+          if (typeof data.relayBase === 'string' && data.relayBase) { config.relayBase = data.relayBase; }
+          if (typeof data.topic === 'string' && data.topic) { config.topic = data.topic; }
+          if (typeof data.appsUrl === 'string') { config.appsUrl = data.appsUrl; }
+          if (typeof data.appsKey === 'string') { config.appsKey = data.appsKey; }
+          if (typeof data.simulate === 'boolean') { config.simulate = data.simulate; }
+          if (data.clearAt) { ui.clearAt = Number(data.clearAt) || 0; }
+        }
+      } catch (e) { /* 깨진 설정은 무시하고 기본값 사용 */ }
+    }
+
+    applyUrlOverrides();
+    // 방 이름(입장 키)이 없으면 비워 둡니다. 화면에서 입력하도록 안내합니다.
+    saveConfig();
+  }
+
+  function applyUrlOverrides() {
+    var q = '';
+    try { q = String((window.location && window.location.search) || ''); } catch (e) { q = ''; }
+    if (!q) { return; }
+    var map = {};
+    q.replace(/^\?/, '').split('&').forEach(function (pair) {
+      var cut = pair.indexOf('=');
+      if (cut < 0) { return; }
+      try {
+        map[decodeURIComponent(pair.slice(0, cut))] = decodeURIComponent(pair.slice(cut + 1));
+      } catch (e) { /* 잘못된 인코딩 무시 */ }
+    });
+    if (map.mode === 'relay' || map.mode === 'apps' || map.mode === 'offline') { config.mode = map.mode; }
+    if (map.api) {
+      if (config.mode === 'apps') { config.appsUrl = map.api; } else { config.relayBase = map.api; }
+    }
+    if (map.topic) { config.topic = trimText(map.topic); }
+    if (map.key) {
+      var urlKey = trimText(map.key);
+      if (config.mode === 'apps') { config.appsKey = urlKey; } else { config.topic = urlKey; }
+    }
+  }
+
+  function trimText(value) {
+    return String(value == null ? '' : value).replace(/^\s+|\s+$/g, '');
+  }
+
+  function needsRoomKey() {
+    if (config.mode === 'offline') { return false; }
+    if (config.mode === 'apps') { return !config.appsUrl || !config.appsKey; }
+    return !config.topic;
+  }
+
+  function saveConfig() {
+    try {
+      window.localStorage.setItem(CONFIG_KEY, JSON.stringify({
+        mode: config.mode,
+        relayBase: config.relayBase,
+        topic: config.topic,
+        appsUrl: config.appsUrl,
+        appsKey: config.appsKey,
+        simulate: config.simulate,
+        clearAt: ui.clearAt
+      }));
+    } catch (e) { /* 저장 실패는 무시 */ }
+  }
+
+  /* =========================================================
+     서버 통신 (릴레이 · Apps Script)
+     ========================================================= */
+  function relayEndpoint() {
+    return String(config.relayBase || 'https://ntfy.sh').replace(/\/+$/, '') + '/' + encodeURIComponent(config.topic);
+  }
+
+  function parseMaybeJson(text) {
+    var raw = String(text == null ? '' : text).trim();
+    if (!raw) { return null; }
+    if (raw.charAt(0) === '{' || raw.charAt(0) === '[') {
+      try { return JSON.parse(raw); } catch (e) { /* 평문으로 처리 */ }
+    }
+    return { t: 'msg', role: 'ai', text: raw };
+  }
+
+  function normalizeEvent(input, fallbackId) {
+    if (!input || typeof input !== 'object') { return null; }
+    var kind = input.t || input.type || 'msg';
+
+    if (kind === 'msg' || kind === 'message') {
+      var text = typeof input.text === 'string' ? input.text : (typeof input.message === 'string' ? input.message : '');
+      text = text.replace(/^\s+|\s+$/g, '');
+      if (!text) { return null; }
+      var name = typeof input.name === 'string' ? input.name : (typeof input.sender === 'string' ? input.sender : '');
+      var ai = input.aiId && AI_BY_ID[input.aiId] ? AI_BY_ID[input.aiId] : aiByName(name || '');
+      return {
+        type: 'msg',
+        id: String(input.id || fallbackId || nextId()),
+        role: input.role === 'user' ? 'user' : 'ai',
+        aiId: ai ? ai.id : null,
+        name: ai ? (name || ai.name) : name,
+        text: text.slice(0, 1000),
+        done: !!input.done,
+        ts: isoOr(input.ts || input.time)
+      };
+    }
+
+    if (kind === 'done' || kind === 'toggle_done') {
+      if (!input.id) { return null; }
+      return { type: 'done', id: String(input.id), done: !!input.done, ts: isoOr(input.ts) };
+    }
+
+    if (kind === 'clear') {
+      return { type: 'clear', ts: isoOr(input.ts) };
+    }
+
+    return null;
+  }
+
+  function postEvent(ev) {
+    if (config.mode === 'relay') {
+      if (!config.topic) { return Promise.reject(new Error('방 입장 키가 없어요')); }
+      return postRelay(ev);
+    }
+    if (config.mode === 'apps') { return postApps(ev); }
+    return Promise.resolve({ ok: true, offline: true });
+  }
+
+  function postRelay(ev) {
+    var payload = { t: ev.type, id: ev.id };
+    if (ev.role) { payload.role = ev.role; }
+    if (ev.aiId) { payload.aiId = ev.aiId; }
+    if (ev.name) { payload.name = ev.name; }
+    if (ev.text) { payload.text = ev.text; }
+    if (ev.ts) { payload.ts = ev.ts; }
+    if (typeof ev.done === 'boolean') { payload.done = ev.done; }
+
+    return fetch(relayEndpoint(), {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify(payload)
+    }).then(function (res) {
+      if (!res.ok) { throw new Error('HTTP ' + res.status); }
+      ui.sent += 1;
+      return { ok: true };
+    });
+  }
+
+  function postApps(ev) {
+    var body = null;
+    if (ev.type === 'msg') {
+      body = {
+        key: config.appsKey,
+        action: 'send',
+        id: ev.id,
+        sender: ev.name || '나',
+        role: ev.role || 'ai',
+        aiId: ev.aiId || '',
+        name: ev.name || '',
+        target: state.target,
+        text: ev.text,
+        ts: ev.ts
+      };
+    } else if (ev.type === 'done') {
+      body = { key: config.appsKey, action: 'toggle_done', id: ev.id, done: !!ev.done };
+    } else if (ev.type === 'clear') {
+      body = { key: config.appsKey, action: 'clear' };
+    } else {
+      return Promise.resolve({ ok: true });
+    }
+
+    return fetch(config.appsUrl, {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify(body)
+    }).then(function (res) {
+      if (!res.ok) { throw new Error('HTTP ' + res.status); }
+      return res.json();
+    }).then(function (data) {
+      if (!data || data.ok !== true) {
+        throw new Error(data && data.error === 'bad_key' ? '입장 키가 달라요' : '서버 오류');
+      }
+      ui.sent += 1;
+      return data;
+    });
+  }
+
+  function queueEvent(ev) {
+    if (ev.type === 'msg') {
+      var local = findMessage(ev.id);
+      if (local) { local.status = 'sending'; renderTimeline('auto'); }
+    }
+    return postEvent(ev).then(function () {
+      ui.lastSync = Date.now();
+      markLink('on');
+      if (ev.type === 'msg') {
+        var ok = findMessage(ev.id);
+        if (ok) { ok.status = 'sent'; }
+        save();
+        renderTimeline('auto');
+      }
+      updateSettings();
+    })['catch'](function (err) {
+      if (ev.type === 'msg') {
+        var bad = findMessage(ev.id);
+        if (bad && bad.status !== 'sent') {
+          bad.status = 'failed';
+          save();
+          renderTimeline('auto');
+        }
+      }
+      ui.outbox.push(ev);
+      ui.lastError = String((err && err.message) || err || '전송 실패');
+      markLink('off');
+      updateSettings();
+    });
+  }
+
+  function flushOutbox() {
+    if (!ui.outbox.length) { return; }
+    var waiting = ui.outbox.slice();
+    ui.outbox = [];
+    waiting.forEach(function (ev) {
+      postEvent(ev).then(function () {
+        if (ev.type === 'msg') {
+          var m = findMessage(ev.id);
+          if (m) { m.status = 'sent'; save(); renderTimeline('auto'); }
+        }
+      })['catch'](function () {
+        ui.outbox.push(ev);
+      });
+    });
+  }
+
+  function pollRelay() {
+    var since = ui.relayCursor || 'all';
+    var url = relayEndpoint() + '/json?poll=1&since=' + encodeURIComponent(since);
+    return fetch(url, { cache: 'no-store' }).then(function (res) {
+      if (!res.ok) { throw new Error('HTTP ' + res.status); }
+      return res.text();
+    }).then(function (text) {
+      var events = [];
+      var lastId = null;
+      String(text || '').split('\n').forEach(function (line) {
+        line = line.replace(/^\s+|\s+$/g, '');
+        if (!line) { return; }
+        var env = null;
+        try { env = JSON.parse(line); } catch (e) { return; }
+        if (!env || env.event !== 'message') { return; }
+        if (env.id) { lastId = env.id; }
+        var ev = normalizeEvent(parseMaybeJson(env.message), env.id ? 'n' + env.id : null);
+        if (ev) { events.push(ev); }
+      });
+      if (lastId) { ui.relayCursor = lastId; }
+      return events;
+    });
+  }
+
+  function pollApps() {
+    var base = String(config.appsUrl || '');
+    if (!base) { return Promise.reject(new Error('서버 주소가 비어 있어요')); }
+    var url = base + (base.indexOf('?') < 0 ? '?' : '&') + 'key=' + encodeURIComponent(config.appsKey) + '&after=0';
+    return fetch(url, { cache: 'no-store' }).then(function (res) {
+      if (!res.ok) { throw new Error('HTTP ' + res.status); }
+      return res.json();
+    }).then(function (data) {
+      if (!data || data.ok !== true) {
+        throw new Error(data && data.error === 'bad_key' ? '입장 키가 달라요' : '서버 응답 오류');
+      }
+      var events = [];
+      var list = Array.isArray(data.messages) ? data.messages : [];
+      list.forEach(function (raw) {
+        if (!raw || !raw.id) { return; }
+        var id = String(raw.id);
+        var known = findMessage(id);
+        if (!known) {
+          var ev = normalizeEvent({
+            t: 'msg',
+            id: id,
+            role: raw.role,
+            aiId: raw.aiId,
+            name: raw.name || raw.sender,
+            text: raw.text,
+            done: raw.done,
+            ts: raw.ts
+          });
+          if (ev) { events.push(ev); }
+        } else if (!!known.done !== !!raw.done) {
+          events.push({ type: 'done', id: id, done: !!raw.done });
+        }
+      });
+      return events;
+    });
+  }
+
+  function pollNow() {
+    if (config.mode === 'offline') { markLink('off'); updateSettings(); return Promise.resolve(); }
+    if (needsRoomKey()) {
+      ui.lastError = '';
+      markLink('off');
+      updateSettings();
+      return Promise.resolve();
+    }
+    if (config.mode === 'apps' && !config.appsUrl) {
+      ui.lastError = '서버 주소를 넣어 주세요';
+      markLink('off');
+      updateSettings();
+      return Promise.resolve();
+    }
+    if (ui.polling) { return Promise.resolve(); }
+    ui.polling = true;
+
+    var run = config.mode === 'apps' ? pollApps() : pollRelay();
+    return run.then(function (events) {
+      ui.polling = false;
+      ui.lastSync = Date.now();
+      ui.lastError = '';
+      markLink('on');
+      if (events && events.length) { applyEvents(events); }
+      flushOutbox();
+      updateSettings();
+    })['catch'](function (err) {
+      ui.polling = false;
+      ui.lastError = String((err && err.message) || err || '연결 실패');
+      markLink('off');
+      updateSettings();
+    });
+  }
+
+  function startSync() {
+    stopSync();
+    if (config.mode === 'offline' || needsRoomKey()) { markLink('off'); updateSettings(); return; }
+    pollNow();
+    var every = config.mode === 'apps' ? config.pollApps : config.pollRelay;
+    ui.pollTimer = window.setInterval(function () {
+      if (document.hidden) { return; }
+      pollNow();
+    }, every);
+  }
+
+  function stopSync() {
+    if (ui.pollTimer) {
+      window.clearInterval(ui.pollTimer);
+      ui.pollTimer = null;
+    }
+  }
+
+  function applyEvents(events) {
+    var changed = false;
+    events.forEach(function (ev) {
+      if (!ev) { return; }
+      if (ev.type === 'msg') {
+        if (!ev.text || findMessage(ev.id)) { return; }
+        if (ui.clearAt && new Date(ev.ts).getTime() <= ui.clearAt) { return; }
+        state.messages.push({
+          id: String(ev.id),
+          role: ev.role === 'user' ? 'user' : 'ai',
+          aiId: ev.aiId || null,
+          name: ev.name || '',
+          text: ev.text,
+          ts: ev.ts,
+          done: !!ev.done,
+          status: 'sent'
+        });
+        ui.received += 1;
+        changed = true;
+      } else if (ev.type === 'done') {
+        var hit = findMessage(ev.id);
+        if (hit && !!hit.done !== !!ev.done) {
+          hit.done = !!ev.done;
+          changed = true;
+        }
+      } else if (ev.type === 'clear') {
+        var at = new Date(ev.ts).getTime();
+        if (!(at > 0)) { at = Date.now(); }
+        if (at > ui.clearAt) {
+          ui.clearAt = at;
+          state.messages = [];
+          saveConfig();
+          changed = true;
+        }
+      }
+    });
+
+    if (changed) {
+      sortMessages();
+      save();
+      renderTimeline('auto');
+      updateSaveStatus();
+    }
+  }
+
+  function markLink(kind) {
+    ui.link = kind === 'on' ? 'on' : 'off';
+    var badge = document.getElementById('connBadge');
+    if (!badge) { return; }
+    if (config.mode === 'offline') {
+      badge.textContent = '오프라인 모드';
+      badge.className = 'badge is-off';
+      return;
+    }
+    if (ui.link === 'on') {
+      badge.innerHTML = '<i class="live-dot" aria-hidden="true"></i>서버 연결됨 · 실시간 동기화';
+      badge.className = 'badge';
+    } else {
+      badge.innerHTML = '<i class="live-dot off" aria-hidden="true"></i>서버 연결 대기 중';
+      badge.className = 'badge is-off';
+    }
+  }
+
+  /* =========================================================
+     DOM 참조
+     ========================================================= */
+  var timelineEl = document.getElementById('timeline');
+  var chipsEl = document.getElementById('chips');
+  var inputEl = document.getElementById('input');
+  var composeEl = document.getElementById('compose');
+  var memberListEl = document.getElementById('memberList');
+  var tabButtons = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var panels = {
+    chat: document.getElementById('panel-chat'),
+    members: document.getElementById('panel-members'),
+    settings: document.getElementById('panel-settings')
+  };
+
+  /* =========================================================
+     HTML 조각
+     ========================================================= */
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return map[c];
+    });
+  }
+
+  function renderRich(text) {
+    var safe = esc(text);
+    safe = safe.replace(MENTION_RE, function (whole, name) {
+      var ai = aiByName(name);
+      if (!ai) { return whole; }
+      return '<span class="mention" style="background:' + ai.soft + ';color:' + ai.deep + '">@' + esc(ai.name) + '</span>';
+    });
+    return safe.replace(/\n/g, '<br>');
+  }
+
+  function doneBtn(m) {
+    var on = !!m.done;
+    return '<button class="done-btn" type="button" data-done="' + esc(m.id) + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
+      (on ? '✓ 완료' : '완료 표시') + '</button>';
+  }
+
+  function dateSepHtml(date) {
+    var label = formatDateLabel(date);
+    var now = new Date();
+    var yesterday = new Date(now.getTime() - 86400000);
+    if (dayKey(date) === dayKey(now)) {
+      label += ' · 오늘';
+    } else if (dayKey(date) === dayKey(yesterday)) {
+      label += ' · 어제';
+    }
+    return '<div class="date-sep"><span>' + esc(label) + '</span></div>';
+  }
+
+  function userHtml(m) {
+    var flag = '';
+    if (m.status === 'sending') { flag = '<span class="msg-state sending">보내는 중…</span>'; }
+    if (m.status === 'failed') { flag = '<span class="msg-state">전송 실패 · 재시도 중</span>'; }
+    return '<div class="msg user' + (m.done ? ' is-done' : '') + '">' +
+        '<div class="av-sm user-av" aria-hidden="true">나</div>' +
+        '<div class="bubble-wrap">' +
+          '<div class="bubble">' + renderRich(m.text) + '</div>' +
+          '<div class="meta">' +
+            '<span class="time">' + formatTime(new Date(m.ts)) + '</span>' +
+            flag +
+            doneBtn(m) +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function aiSkin(m) {
+    if (m.aiId && AI_BY_ID[m.aiId]) { return AI_BY_ID[m.aiId]; }
+    var label = m.name || 'AI';
+    return {
+      id: 'guest',
+      name: label,
+      initial: label.charAt(0),
+      color: '#5b6880',
+      soft: '#eef2f9',
+      deep: '#42506a'
+    };
+  }
+
+  function aiHtml(m) {
+    var ai = aiSkin(m);
+    return '<div class="msg ai' + (m.done ? ' is-done' : '') + '" style="--c:' + ai.color + ';--s:' + ai.soft + ';--d:' + ai.deep + '">' +
+        '<div class="av-sm" aria-hidden="true">' + esc(ai.initial) + '</div>' +
+        '<div class="bubble-wrap">' +
+          '<div class="meta">' +
+            '<span class="name">' + esc(ai.name) + '</span>' +
+            '<span class="role-dot">·</span>' +
+            '<span class="time">' + formatTime(new Date(m.ts)) + '</span>' +
+          '</div>' +
+          '<div class="bubble">' + renderRich(m.text) + '</div>' +
+          '<div class="meta">' + doneBtn(m) + '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function typingHtml(aiId) {
+    var ai = AI_BY_ID[aiId] || AIS[0];
+    return '<div class="msg ai typing" style="--c:' + ai.color + ';--s:' + ai.soft + ';--d:' + ai.deep + '">' +
+        '<div class="av-sm" aria-hidden="true">' + esc(ai.initial) + '</div>' +
+        '<div class="bubble-wrap">' +
+          '<div class="meta">' +
+            '<span class="name">' + esc(ai.name) + '</span>' +
+            '<span class="role-dot">·</span>' +
+            '<span class="time">답장 작성 중...</span>' +
+          '</div>' +
+          '<div class="bubble"><span class="dots"><i></i><i></i><i></i></span></div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function emptyHtml() {
+    var avatars = AIS.map(function (ai) {
+      return '<span class="av" style="background:' + ai.color + '">' + esc(ai.initial) + '</span>';
+    }).join('');
+    var buttons = EXAMPLES.map(function (ex, i) {
+      return '<button class="ex-btn" type="button" data-example="' + i + '">' +
+          '<span class="ex-ico" aria-hidden="true">' + ex.icon + '</span>' +
+          '<span class="ex-body">' +
+            '<span class="ex-text">' + esc(ex.label) + '</span>' +
+            '<span class="ex-hint">' + esc(ex.hint) + '</span>' +
+          '</span>' +
+          '<span class="ex-go" aria-hidden="true">→</span>' +
+        '</button>';
+    }).join('');
+
+    return '<div class="empty">' +
+        '<div class="empty-avatars" aria-hidden="true">' + avatars + '</div>' +
+        '<h2>아직 대화가 없어요</h2>' +
+        '<p>AI 5명이 같은 방에 접속해 있어요.<br>지시를 남기면 봇들이 읽고 답장해요.</p>' +
+        '<div class="ex-list">' + buttons + '</div>' +
+      '</div>';
+  }
+
+  function buildTimeline() {
+    if (!state.messages.length && !ui.pending) { return emptyHtml(); }
+    var out = '';
+    var lastDay = '';
+    state.messages.forEach(function (m) {
+      var date = new Date(m.ts);
+      var key = dayKey(date);
+      if (key !== lastDay) {
+        out += dateSepHtml(date);
+        lastDay = key;
+      }
+      out += m.role === 'user' ? userHtml(m) : aiHtml(m);
+    });
+    if (ui.pending) { out += typingHtml(ui.pending); }
+    return out;
+  }
+
+  function renderTimeline(mode) {
+    var prevTop = timelineEl.scrollTop;
+    var nearBottom = timelineEl.scrollHeight - timelineEl.scrollTop - timelineEl.clientHeight < 90;
+    timelineEl.innerHTML = buildTimeline();
+    if (!state.messages.length && !ui.pending) {
+      timelineEl.scrollTop = 0;
+      return;
+    }
+    if (mode === 'bottom' || (mode !== 'keep' && nearBottom)) {
+      timelineEl.scrollTop = timelineEl.scrollHeight;
+    } else {
+      timelineEl.scrollTop = prevTop;
+    }
+  }
+
+  function renderHeader() {
+    var el = document.getElementById('headerAvatars');
+    if (!el) { return; }
+    el.innerHTML = AIS.map(function (ai) {
+      return '<span class="av" style="background:' + ai.color + '">' + esc(ai.initial) + '</span>';
+    }).join('');
+  }
+
+  function renderChips() {
+    var html = '<button class="chip' + (state.target === 'all' ? ' is-on' : '') + '" type="button" data-target="all" aria-pressed="' + (state.target === 'all' ? 'true' : 'false') + '">' +
+        '<span class="chip-dot all"></span>모두에게</button>';
+    AIS.forEach(function (ai) {
+      var on = state.target === ai.id;
+      html += '<button class="chip' + (on ? ' is-on' : '') + '" type="button" data-target="' + ai.id + '" aria-pressed="' + (on ? 'true' : 'false') + '"' +
+          ' style="--c:' + ai.color + ';--s:' + ai.soft + ';--d:' + ai.deep + '">' +
+          '<span class="chip-dot" style="background:' + ai.color + '"></span>' + esc(ai.name) +
+        '</button>';
+    });
+    chipsEl.innerHTML = html;
+  }
+
+  function renderMembers() {
+    memberListEl.innerHTML = AIS.map(function (ai) {
+      return '<article class="member" style="--c:' + ai.color + ';--s:' + ai.soft + ';--d:' + ai.deep + '">' +
+          '<div class="member-top">' +
+            '<div class="av-lg" aria-hidden="true">' + esc(ai.initial) + '</div>' +
+            '<div class="member-id">' +
+              '<h3>' + esc(ai.name) + '</h3>' +
+              '<span class="role-tag">' + esc(ai.role) + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<p>' + esc(ai.desc) + '</p>' +
+          '<div class="skills">' + ai.skills.map(function (s) {
+            return '<span class="skill">' + esc(s) + '</span>';
+          }).join('') + '</div>' +
+          '<button class="ask-btn" type="button" data-ask="' + ai.id + '">말 걸기</button>' +
+        '</article>';
+    }).join('');
+  }
+
+  var PLACEHOLDERS = {
+    all: '여러 AI에게 시킬 일을 적어 보세요',
+    pickle: '예: 토요일 저녁 외식 예약 잡아줘',
+    keyring: '예: 다음 주 마감 캘린더에 정리해줘',
+    cue: '예: 전기요금 인상률 자료 찾아줘',
+    muse: '예: 이번 달 구독 정리해줘',
+    vooy: '예: 무선 청소기 30만원대 비교해줘'
+  };
+
+  function updatePlaceholder() {
+    inputEl.placeholder = PLACEHOLDERS[state.target] || PLACEHOLDERS.all;
+  }
+
+  /* =========================================================
+     저장
+     ========================================================= */
+  function checkStorage() {
+    try {
+      var probe = '__airoom_probe__';
+      window.localStorage.setItem(probe, '1');
+      window.localStorage.removeItem(probe);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function save() {
+    if (!ui.storageOK) {
+      ui.saveError = true;
+      updateSaveStatus();
+      return;
+    }
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        version: 2,
+        savedAt: new Date().toISOString(),
+        target: state.target,
+        messages: state.messages
+      }));
+      ui.lastSaved = Date.now();
+      ui.saveError = false;
+    } catch (e) {
+      ui.saveError = true;
+    }
+    updateSaveStatus();
+  }
+
+  function load() {
+    var raw = null;
+    try {
+      raw = window.localStorage.getItem(STORAGE_KEY);
+    } catch (e) {
+      raw = null;
+    }
+    if (!raw) { return; }
+    var data = null;
+    try {
+      data = JSON.parse(raw);
+    } catch (e) {
+      return;
+    }
+    if (!data || !Array.isArray(data.messages)) { return; }
+
+    var allowed = {};
+    AIS.forEach(function (ai) { allowed[ai.id] = true; });
+
+    state.messages = data.messages.filter(function (m) {
+      if (!m || typeof m.text !== 'string' || !m.text) { return false; }
+      if (m.role !== 'user' && m.role !== 'ai') { return false; }
+      return !isNaN(new Date(m.ts).getTime());
+    }).map(function (m) {
+      return {
+        id: typeof m.id === 'string' && m.id ? m.id : nextId(),
+        role: m.role,
+        aiId: m.role === 'ai' && allowed[m.aiId] ? m.aiId : null,
+        name: typeof m.name === 'string' ? m.name : '',
+        text: m.text,
+        ts: new Date(m.ts).toISOString(),
+        done: !!m.done,
+        status: m.status === 'failed' ? 'failed' : 'sent'
+      };
+    });
+
+    if (data.target === 'all' || (data.target && allowed[data.target])) {
+      state.target = data.target;
+    }
+    if (data.savedAt) {
+      var t = new Date(data.savedAt).getTime();
+      if (!isNaN(t)) { ui.lastSaved = t; }
+    }
+    sortMessages();
+  }
+
+  function updateSaveStatus() {
+    var stateEl = document.getElementById('saveState');
+    var lastEl = document.getElementById('lastSaved');
+    var countEl = document.getElementById('msgCount');
+    var doneEl = document.getElementById('doneCount');
+    var sizeEl = document.getElementById('storageSize');
+    if (!stateEl) { return; }
+
+    if (ui.saveError || !ui.storageOK) {
+      stateEl.textContent = '저장할 수 없어요';
+      stateEl.className = 'pill warn';
+    } else {
+      stateEl.textContent = '자동 저장 켜짐';
+      stateEl.className = 'pill ok';
+    }
+
+    lastEl.textContent = ui.lastSaved ? formatTime(new Date(ui.lastSaved)) : '아직 없음';
+
+    var done = 0;
+    state.messages.forEach(function (m) { if (m.done) { done += 1; } });
+    countEl.textContent = state.messages.length + '개';
+    doneEl.textContent = done + '개';
+
+    var bytes = 0;
+    try {
+      bytes = JSON.stringify({ messages: state.messages, target: state.target }).length * 2;
+    } catch (e) {
+      bytes = 0;
+    }
+    if (bytes < 1024) {
+      sizeEl.textContent = bytes + 'B';
+    } else {
+      sizeEl.textContent = '약 ' + (bytes / 1024).toFixed(1) + 'KB';
+    }
+  }
+
+  /* =========================================================
+     메시지 · 답장
+     ========================================================= */
+  function wait(ms) {
+    return new Promise(function (resolve) { window.setTimeout(resolve, ms); });
+  }
+
+  function pump() {
+    if (ui.busy) { return; }
+    ui.busy = true;
+
+    function step() {
+      if (!ui.queue.length) {
+        ui.busy = false;
+        ui.pending = null;
+        return;
+      }
+      var job = ui.queue.shift();
+      if (job.gen !== ui.gen) { return step(); }
+      ui.pending = job.aiId;
+      renderTimeline('auto');
+
+      wait(job.delay).then(function () {
+        if (job.gen !== ui.gen) {
+          ui.pending = null;
+          return step();
+        }
+        ui.pending = null;
+        var text = makeReply(job.aiId, job.sourceText, job.seed, job.nextAiId, job.isFollowUp);
+        var ai = AI_BY_ID[job.aiId];
+        var msg = {
+          id: nextId(),
+          role: 'ai',
+          aiId: job.aiId,
+          name: ai ? ai.name : '',
+          text: text,
+          ts: new Date().toISOString(),
+          done: false,
+          status: 'sent'
+        };
+        state.messages.push(msg);
+        save();
+        renderTimeline('auto');
+        queueEvent({ type: 'msg', id: msg.id, role: 'ai', aiId: msg.aiId, name: msg.name, text: msg.text, ts: msg.ts });
+        wait(240).then(step);
+      });
+    }
+
+    step();
+  }
+
+  function send(text, targetOverride) {
+    var body = String(text == null ? '' : text).replace(/^\s+|\s+$/g, '');
+    if (!body) {
+      inputEl.focus();
+      return;
+    }
+    if (body.length > 600) { body = body.slice(0, 600); }
+
+    if (needsRoomKey()) {
+      toast('먼저 설정에서 방 입장 키를 넣어 주세요');
+      switchTab('settings');
+      var keyBox = document.getElementById('keyInput');
+      if (keyBox) {
+        try { keyBox.focus({ preventScroll: true }); } catch (e) { keyBox.focus(); }
+      }
+      return;
+    }
+
+    var target = targetOverride || state.target;
+    var msg = {
+      id: nextId(),
+      role: 'user',
+      aiId: null,
+      name: '나',
+      text: body,
+      ts: new Date().toISOString(),
+      done: false,
+      status: 'sending'
+    };
+    state.messages.push(msg);
+    save();
+    renderTimeline('bottom');
+
+    inputEl.value = '';
+    autosize();
+
+    queueEvent({ type: 'msg', id: msg.id, role: 'user', name: '나', text: body, ts: msg.ts, target: target });
+
+    if (config.simulate) {
+      var recipients = pickRecipients(target, body);
+      recipients.forEach(function (id, i) {
+        ui.queue.push({
+          gen: ui.gen,
+          aiId: id,
+          sourceText: body,
+          seed: state.messages.length + i,
+          nextAiId: recipients[i + 1] || null,
+          isFollowUp: i > 0,
+          delay: 600 + Math.floor(Math.random() * 1400)
+        });
+      });
+      pump();
+    }
+  }
+
+  function toggleDone(id) {
+    var found = findMessage(id);
+    if (!found) { return; }
+    found.done = !found.done;
+    save();
+    renderTimeline('keep');
+    updateSaveStatus();
+    queueEvent({ type: 'done', id: found.id, done: found.done, ts: new Date().toISOString() });
+  }
+
+  function setTarget(id) {
+    if (id !== 'all' && !AI_BY_ID[id]) { return; }
+    state.target = id;
+    renderChips();
+    updatePlaceholder();
+    save();
+  }
+
+  /* =========================================================
+     내보내기 · 초기화
+     ========================================================= */
+  function exportJson() {
+    if (!state.messages.length) {
+      toast('아직 내보낼 대화가 없어요');
+      return;
+    }
+    var payload = {
+      app: 'AI 협업 웹 채팅방',
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      room: config.mode === 'apps' ? config.appsUrl : relayEndpoint(),
+      ais: AIS.map(function (ai) {
+        return { id: ai.id, name: ai.name, role: ai.role };
+      }),
+      messageCount: state.messages.length,
+      messages: state.messages.map(function (m) {
+        return {
+          id: m.id,
+          role: m.role,
+          aiId: m.aiId || null,
+          aiName: m.aiId && AI_BY_ID[m.aiId] ? AI_BY_ID[m.aiId].name : (m.name || null),
+          text: m.text,
+          time: m.ts,
+          done: !!m.done
+        };
+      })
+    };
+
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var d = new Date();
+    var name = 'ai-collab-chat-' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) +
+      '-' + pad2(d.getHours()) + pad2(d.getMinutes()) + '.json';
+
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+
+    toast('대화 내역을 JSON으로 내보냈어요');
+  }
+
+  var resetBtn = document.getElementById('resetBtn');
+  var resetConfirm = document.getElementById('resetConfirm');
+  var resetCancel = document.getElementById('resetCancel');
+  var resetYes = document.getElementById('resetYes');
+
+  function resetAll() {
+    ui.gen += 1;
+    ui.queue = [];
+    ui.pending = null;
+
+    state.messages = [];
+    state.target = 'all';
+    ui.clearAt = Date.now();
+    saveConfig();
+
+    renderChips();
+    updatePlaceholder();
+    save();
+    renderTimeline('bottom');
+    updateSaveStatus();
+    inputEl.value = '';
+    autosize();
+    queueEvent({ type: 'clear', ts: new Date(ui.clearAt).toISOString() });
+    toast('대화를 초기화했어요');
+  }
+
+  /* =========================================================
+     탭 · 화면
+     ========================================================= */
+  function switchTab(name) {
+    if (!panels[name]) { return; }
+    tabButtons.forEach(function (btn) {
+      var on = btn.getAttribute('data-tab') === name;
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      btn.setAttribute('tabindex', on ? '0' : '-1');
+    });
+    Object.keys(panels).forEach(function (key) {
+      if (panels[key]) { panels[key].hidden = key !== name; }
+    });
+    if (name === 'settings') {
+      updateSaveStatus();
+      updateSettings();
+    }
+    if (name === 'chat') {
+      window.setTimeout(function () { renderTimeline('bottom'); }, 0);
+    }
+  }
+
+  function askAi(id) {
+    var ai = AI_BY_ID[id];
+    if (!ai) { return; }
+
+    state.target = id;
+    renderChips();
+    updatePlaceholder();
+    save();
+    switchTab('chat');
+
+    window.setTimeout(function () {
+      try {
+        inputEl.focus({ preventScroll: true });
+      } catch (e) {
+        inputEl.focus();
+      }
+      if (!inputEl.value) {
+        inputEl.value = '@' + ai.name + ' ';
+        try {
+          inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length);
+        } catch (e) { /* selection 미지원 브라우저 무시 */ }
+      }
+      autosize();
+      timelineEl.scrollTop = timelineEl.scrollHeight;
+    }, 60);
+
+    toast(ai.name + '에게 말을 걸어요');
+  }
+
+  function runExample(i) {
+    var ex = EXAMPLES[i];
+    if (!ex) { return; }
+    if (state.target !== 'all') {
+      state.target = 'all';
+      renderChips();
+      updatePlaceholder();
+      save();
+    }
+    switchTab('chat');
+    send(ex.label, 'all');
+  }
+
+  /* =========================================================
+     설정 화면 (서버 연결)
+     ========================================================= */
+  function updateSettings() {
+    var pill = document.getElementById('linkState');
+    if (!pill) { return; }
+
+    if (needsRoomKey()) {
+      pill.textContent = '입장 키 필요';
+      pill.className = 'pill warn';
+    } else if (config.mode === 'offline') {
+      pill.textContent = '오프라인';
+      pill.className = 'pill';
+    } else if (ui.link === 'on') {
+      pill.textContent = '연결됨';
+      pill.className = 'pill ok';
+    } else if (ui.lastError) {
+      pill.textContent = '연결 안 됨';
+      pill.className = 'pill warn';
+    } else {
+      pill.textContent = '확인 중';
+      pill.className = 'pill';
+    }
+
+    document.getElementById('linkMode').textContent =
+      config.mode === 'apps' ? 'Apps Script' : (config.mode === 'relay' ? '릴레이(ntfy)' : '오프라인');
+    document.getElementById('lastSync').textContent = ui.lastSync ? formatTime(new Date(ui.lastSync)) : '아직 없음';
+
+    var roomEl = document.getElementById('linkRoom');
+    if (config.mode === 'apps') {
+      roomEl.textContent = config.appsUrl || '주소 없음';
+    } else if (config.mode === 'relay') {
+      roomEl.textContent = config.topic ? relayEndpoint() : '방 이름을 넣어 주세요';
+    } else {
+      roomEl.textContent = '사용 안 함';
+    }
+
+    document.getElementById('linkKey').textContent = config.mode === 'apps'
+      ? (config.appsKey ? config.appsKey.slice(0, 6) + '…' + config.appsKey.slice(-4) : '없음')
+      : (config.topic || '없음');
+
+    var stat = document.getElementById('linkStat');
+    if (stat) {
+      stat.textContent = '보낸 ' + ui.sent + ' · 받은 ' + ui.received +
+        (ui.lastError ? ' · ' + ui.lastError : '');
+    }
+
+    var sig = config.mode + '|' + config.appsUrl + '|' + config.appsKey + '|' + config.topic + '|' + config.relayBase;
+    if (sig !== ui.guideSig) {
+      ui.guideSig = sig;
+      document.getElementById('botGuide').value = buildGuide();
+    }
+
+    renderKeyNotice();
+  }
+
+  function renderKeyNotice() {
+    var box = document.getElementById('keyNotice');
+    if (!box) { return; }
+    var need = needsRoomKey();
+    box.hidden = !need;
+    if (!need) { return; }
+    var textEl = document.getElementById('keyNoticeText');
+    if (textEl) {
+      textEl.textContent = config.mode === 'apps'
+        ? '이 방은 아직 서버 주소와 입장 키가 없어요. 설정에서 넣으면 바로 연결됩니다.'
+        : '이 방은 아직 입장 키가 없어요. 받으신 접속 링크로 다시 열거나, 설정에서 방 이름(입장 키)을 넣어 주세요.';
+    }
+  }
+
+  function buildGuide() {
+    if (needsRoomKey()) {
+      return [
+        'AI 협업 채팅방 · 봇 접속 안내',
+        '',
+        '이 방은 아직 입장 키가 없어요.',
+        '설정 탭에서 방 이름(입장 키)을 넣고 [저장 후 연결]을 눌러 주세요.',
+        '입장 키를 받으셨다면 주소 끝에 ?topic=입장키 를 붙여 열어도 바로 연결됩니다.',
+        '예) ' + window.location.origin + window.location.pathname + '?topic=입장키'
+      ].join('\n');
+    }
+    if (config.mode === 'apps') {
+      var base = config.appsUrl || 'https://script.google.com/macros/s/…/exec';
+      return [
+        'AI 협업 채팅방 · 봇 접속 안내',
+        '서버(웹 앱) : ' + base,
+        '입장 키      : ' + (config.appsKey || '(설정에서 확인)'),
+        '',
+        '1) 새 지시 읽기',
+        'curl -s "' + base + '?key=' + (config.appsKey || 'KEY') + '&after=0"',
+        '',
+        '2) 답장 올리기 (자기 이름으로)',
+        'curl -s -X POST "' + base + '" -H "Content-Type: text/plain" \\',
+        '  -d \'{"key":"' + (config.appsKey || 'KEY') + '","action":"send","role":"ai","aiId":"cue","name":"Cue","text":"확인했습니다. 제가 맡을게요."}\'',
+        '',
+        '3) 완료 표시 / 초기화',
+        'curl -s -X POST "' + base + '" -d \'{"key":"KEY","action":"toggle_done","id":"메시지ID","done":true}\'',
+        'curl -s -X POST "' + base + '" -d \'{"key":"KEY","action":"clear"}\'',
+        '',
+        '규칙',
+        '- role 은 user(사람 지시) / ai(봇 답장). aiId 는 pickle, keyring, cue, muse, vooy 중 하나.',
+        '- 답장은 새로 온 user 메시지에만, 한 번만. 15초 안에 응답해 주세요.'
+      ].join('\n');
+    }
+
+    var room = relayEndpoint();
+    return [
+      'AI 협업 채팅방 · 봇 접속 안내',
+      '방 읽기 : ' + room + '/json?poll=1&since=5m',
+      '방 쓰기 : ' + room + '  (POST, 본문 = 메시지 JSON)',
+      '입장 키 : ' + config.topic,
+      '',
+      '1) 새 지시 읽기 (최근 5분)',
+      'curl -s "' + room + '/json?poll=1&since=5m"',
+      '  → 한 줄에 하나씩 JSON 이 나옵니다. "event":"message" 인 줄의 "message" 값이 실제 내용이에요.',
+      '',
+      '2) 답장 올리기 (자기 이름으로)',
+      'curl -s -X POST "' + room + '" -H "Content-Type: text/plain" \\',
+      '  -d \'{"t":"msg","role":"ai","aiId":"cue","name":"Cue","text":"확인했습니다. 자료 조사는 제가 맡을게요."}\'',
+      '',
+      '3) 완료 표시 / 초기화',
+      'curl -s -X POST "' + room + '" -d \'{"t":"done","id":"메시지ID","done":true}\'',
+      'curl -s -X POST "' + room + '" -d \'{"t":"clear"}\'',
+      '',
+      '규칙',
+      '- role 은 user(사람 지시) / ai(봇 답장). aiId 는 pickle, keyring, cue, muse, vooy 중 하나.',
+      '- 답장은 새로 온 user 메시지에만, 한 번만. 15초 안에 응답해 주세요.',
+      '- 파일·링크는 text 안에 넣어 주세요.'
+    ].join('\n');
+  }
+
+  function fillConfigInputs() {
+    var modeSel = document.getElementById('modeSelect');
+    if (modeSel) { modeSel.value = config.mode; }
+    var api = document.getElementById('apiInput');
+    if (api) { api.value = config.mode === 'apps' ? config.appsUrl : config.relayBase; }
+    var key = document.getElementById('keyInput');
+    if (key) { key.value = config.mode === 'apps' ? config.appsKey : config.topic; }
+    var sim = document.getElementById('simToggle');
+    if (sim) { sim.checked = !!config.simulate; }
+  }
+
+  function applyServerSettings() {
+    var modeSel = document.getElementById('modeSelect');
+    var api = document.getElementById('apiInput');
+    var key = document.getElementById('keyInput');
+    var mode = modeSel ? modeSel.value : config.mode;
+    var apiValue = api ? String(api.value || '').replace(/^\s+|\s+$/g, '') : '';
+    var keyValue = key ? String(key.value || '').replace(/^\s+|\s+$/g, '') : '';
+
+    if (mode !== 'relay' && mode !== 'apps' && mode !== 'offline') { mode = 'relay'; }
+    config.mode = mode;
+
+    if (mode === 'apps') {
+      config.appsUrl = apiValue;
+      config.appsKey = keyValue;
+    } else if (mode === 'relay') {
+      config.relayBase = apiValue || 'https://ntfy.sh';
+      config.topic = keyValue;
+    }
+
+    ui.relayCursor = null;
+    ui.polling = false;
+    ui.lastError = '';
+    ui.lastSync = 0;
+    saveConfig();
+    fillConfigInputs();
+    startSync();
+    updateSettings();
+    if (needsRoomKey()) {
+      toast('방 입장 키를 넣어 주세요');
+    } else {
+      toast(config.mode === 'offline' ? '오프라인 모드로 전환했어요' : '서버에 연결을 시도해요');
+    }
+  }
+
+  function newRoom() {
+    config.topic = randomRoom();
+    config.mode = 'relay';
+    ui.relayCursor = null;
+    ui.clearAt = Date.now();
+    saveConfig();
+    fillConfigInputs();
+    startSync();
+    updateSettings();
+    toast('새 방을 만들었어요. 봇에게 새 키를 전달하세요');
+  }
+
+  function copyText(text, okMessage) {
+    var done = function () { toast(okMessage); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text, okMessage); });
+    } else {
+      fallbackCopy(text, okMessage);
+    }
+  }
+
+  function fallbackCopy(text, okMessage) {
+    var area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', 'readonly');
+    area.style.position = 'fixed';
+    area.style.top = '-1000px';
+    document.body.appendChild(area);
+    area.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(area);
+    toast(ok ? okMessage : '복사가 안 됐어요. 길게 눌러 복사해 주세요');
+  }
+
+  function roomSummary() {
+    if (config.mode === 'apps') {
+      return 'AI 협업 채팅방\n서버: ' + config.appsUrl + '\n입장 키: ' + config.appsKey;
+    }
+    return 'AI 협업 채팅방\n방: ' + (config.topic ? relayEndpoint() : '아직 없음') +
+      '\n입장 키: ' + (config.topic || '아직 없음');
+  }
+
+  /* =========================================================
+     토스트 · 입력
+     ========================================================= */
+  var toastEl = null;
+
+  function toast(message) {
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.className = 'toast';
+      toastEl.setAttribute('role', 'status');
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    window.clearTimeout(ui.toastTimer);
+    ui.toastTimer = window.setTimeout(function () {
+      toastEl.classList.remove('show');
+    }, 2400);
+  }
+
+  function autosize() {
+    inputEl.style.height = 'auto';
+    var next = Math.min(inputEl.scrollHeight, 132);
+    inputEl.style.height = (next > 0 ? next : 24) + 'px';
+  }
+
+  /* =========================================================
+     이벤트
+     ========================================================= */
+  function bindEvents() {
+    tabButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        switchTab(btn.getAttribute('data-tab'));
+      });
+    });
+
+    var noticeBtn = document.getElementById('keyNoticeBtn');
+    if (noticeBtn) {
+      noticeBtn.addEventListener('click', function () {
+        switchTab('settings');
+        var keyBox = document.getElementById('keyInput');
+        if (keyBox) {
+          try { keyBox.focus({ preventScroll: true }); } catch (e) { keyBox.focus(); }
+        }
+      });
+    }
+
+    chipsEl.addEventListener('click', function (e) {
+      var chip = e.target.closest ? e.target.closest('[data-target]') : null;
+      if (!chip) { return; }
+      setTarget(chip.getAttribute('data-target'));
+    });
+
+    timelineEl.addEventListener('click', function (e) {
+      var doneHit = e.target.closest ? e.target.closest('[data-done]') : null;
+      if (doneHit) {
+        toggleDone(doneHit.getAttribute('data-done'));
+        return;
+      }
+      var exHit = e.target.closest ? e.target.closest('[data-example]') : null;
+      if (exHit) {
+        runExample(parseInt(exHit.getAttribute('data-example'), 10));
+      }
+    });
+
+    memberListEl.addEventListener('click', function (e) {
+      var hit = e.target.closest ? e.target.closest('[data-ask]') : null;
+      if (!hit) { return; }
+      askAi(hit.getAttribute('data-ask'));
+    });
+
+    composeEl.addEventListener('submit', function (e) {
+      e.preventDefault();
+      send(inputEl.value);
+    });
+
+    inputEl.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        send(inputEl.value);
+      }
+    });
+
+    inputEl.addEventListener('input', autosize);
+
+    document.getElementById('exportBtn').addEventListener('click', exportJson);
+
+    resetBtn.addEventListener('click', function () {
+      resetConfirm.hidden = false;
+      resetBtn.hidden = true;
+    });
+    resetCancel.addEventListener('click', function () {
+      resetConfirm.hidden = true;
+      resetBtn.hidden = false;
+    });
+    resetYes.addEventListener('click', function () {
+      resetConfirm.hidden = true;
+      resetBtn.hidden = false;
+      resetAll();
+    });
+
+    bindSettings();
+  }
+
+  function bindSettings() {
+    var applyBtn = document.getElementById('applyServer');
+    if (applyBtn) { applyBtn.addEventListener('click', applyServerSettings); }
+
+    var roomBtn = document.getElementById('newRoom');
+    if (roomBtn) { roomBtn.addEventListener('click', newRoom); }
+
+    var copyRoomBtn = document.getElementById('copyRoom');
+    if (copyRoomBtn) {
+      copyRoomBtn.addEventListener('click', function () {
+        copyText(roomSummary(), '방 주소와 입장 키를 복사했어요');
+      });
+    }
+
+    var copyBotBtn = document.getElementById('copyBot');
+    if (copyBotBtn) {
+      copyBotBtn.addEventListener('click', function () {
+        copyText(buildGuide(), '봇 접속 안내 문구를 복사했어요');
+      });
+    }
+
+    var retryBtn = document.getElementById('retrySync');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', function () {
+        ui.lastError = '';
+        pollNow();
+        toast('다시 연결해 볼게요');
+      });
+    }
+
+    var sim = document.getElementById('simToggle');
+    if (sim) {
+      sim.addEventListener('change', function () {
+        config.simulate = !!sim.checked;
+        saveConfig();
+        toast(config.simulate ? '로컬 시뮬레이터를 켰어요' : '로컬 시뮬레이터를 껐어요');
+      });
+    }
+
+    var modeSel = document.getElementById('modeSelect');
+    if (modeSel) {
+      modeSel.addEventListener('change', function () {
+        var mode = modeSel.value;
+        var api = document.getElementById('apiInput');
+        var key = document.getElementById('keyInput');
+        if (mode === 'apps') {
+          api.value = config.appsUrl;
+          key.value = config.appsKey;
+          api.placeholder = 'https://script.google.com/macros/s/…/exec';
+          key.placeholder = '방 입장 키';
+        } else if (mode === 'relay') {
+          api.value = config.relayBase;
+          key.value = config.topic;
+          api.placeholder = 'https://ntfy.sh';
+          key.placeholder = '방 이름(토픽)';
+        } else {
+          api.value = '';
+          key.value = '';
+        }
+        api.disabled = mode === 'offline';
+        key.disabled = mode === 'offline';
+      });
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && config.mode !== 'offline') { pollNow(); }
+    });
+  }
+
+  /* =========================================================
+     시작
+     ========================================================= */
+  function init() {
+    ui.storageOK = checkStorage();
+    loadConfig();
+    if (ui.storageOK) { load(); }
+
+    renderHeader();
+    renderChips();
+    renderMembers();
+    updatePlaceholder();
+    renderTimeline('bottom');
+    bindEvents();
+    updateSaveStatus();
+    fillConfigInputs();
+    updateSettings();
+    markLink('off');
+    autosize();
+    startSync();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
